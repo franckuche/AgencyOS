@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <rect width="200" height="200" rx="40" fill="#0B1420"/>
+  <rect width="200" height="200" rx="40" fill="url(#omar-bg)" opacity="0.3"/>
+  <!-- Face base -->
+  <ellipse cx="100" cy="108" rx="52" ry="56" fill="#C68642"/>
+  <!-- Hair -->
+  <path d="M48 90C48 62 70 42 100 42C130 42 152 62 152 90C152 78 140 68 100 68C60 68 48 78 48 90Z" fill="#1A1A2E"/>
+  <!-- Beard shadow -->
+  <path d="M65 120C65 120 75 155 100 158C125 155 135 120 135 120C135 140 120 160 100 162C80 160 65 140 65 120Z" fill="#1A1A2E" opacity="0.6"/>
+  <!-- Eyes -->
+  <ellipse cx="80" cy="100" rx="8" ry="8" fill="white"/>
+  <ellipse cx="120" cy="100" rx="8" ry="8" fill="white"/>
+  <ellipse cx="82" cy="100" rx="4.5" ry="4.5" fill="#1A1A2E"/>
+  <ellipse cx="122" cy="100" rx="4.5" ry="4.5" fill="#1A1A2E"/>
+  <ellipse cx="83" cy="98.5" rx="1.5" ry="1.5" fill="white"/>
+  <ellipse cx="123" cy="98.5" rx="1.5" ry="1.5" fill="white"/>
+  <!-- Eyebrows -->
+  <path d="M70 88C74 84 86 84 90 88" stroke="#1A1A2E" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <path d="M110 88C114 84 126 84 130 88" stroke="#1A1A2E" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <!-- Nose -->
+  <path d="M96 108C96 108 94 116 98 118C102 118 106 118 106 116C104 108 104 108 104 108" stroke="#A0652E" stroke-width="1.5" fill="none"/>
+  <!-- Smile -->
+  <path d="M85 130C90 138 110 138 115 130" stroke="#8B4513" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <!-- Glasses -->
+  <rect x="66" y="91" width="28" height="20" rx="4" stroke="#00D4AA" stroke-width="2.5" fill="none"/>
+  <rect x="106" y="91" width="28" height="20" rx="4" stroke="#00D4AA" stroke-width="2.5" fill="none"/>
+  <line x1="94" y1="99" x2="106" y2="99" stroke="#00D4AA" stroke-width="2"/>
+  <!-- Hoodie collar -->
+  <path d="M55 170C55 150 72 142 100 140C128 142 145 150 145 170" fill="#0F2B3C"/>
+  <path d="M85 142L100 158L115 142" fill="#0A1F2C" stroke="#00D4AA" stroke-width="1" opacity="0.5"/>
+  <defs>
+    <radialGradient id="omar-bg" cx="0.3" cy="0.3">
+      <stop offset="0%" stop-color="#00D4AA"/>
+      <stop offset="100%" stop-color="#0B1420"/>
+    </radialGradient>
+  </defs>
+</svg>

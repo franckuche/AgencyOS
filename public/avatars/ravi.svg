@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <rect width="200" height="200" rx="40" fill="#0B1420"/>
+  <rect width="200" height="200" rx="40" fill="url(#ravi-bg)" opacity="0.3"/>
+  <!-- Chef jacket -->
+  <path d="M48 175C48 150 68 138 100 136C132 138 152 150 152 175" fill="white"/>
+  <path d="M92 140L100 155L108 140" fill="#F0F0F0"/>
+  <!-- Double breasted buttons -->
+  <circle cx="90" cy="158" r="2" fill="#DDD"/>
+  <circle cx="90" cy="168" r="2" fill="#DDD"/>
+  <circle cx="110" cy="158" r="2" fill="#DDD"/>
+  <circle cx="110" cy="168" r="2" fill="#DDD"/>
+  <!-- Face base -->
+  <ellipse cx="100" cy="108" rx="48" ry="52" fill="#8D5524"/>
+  <!-- Mustache -->
+  <path d="M82 122C86 118 94 118 100 122C106 118 114 118 118 122C118 126 114 128 106 126C102 124 98 124 94 126C86 128 82 126 82 122Z" fill="#1A1A1A"/>
+  <!-- Goatee -->
+  <ellipse cx="100" cy="138" rx="8" ry="6" fill="#1A1A1A" opacity="0.7"/>
+  <!-- Hair -->
+  <path d="M54 86C54 58 74 38 100 38C126 38 146 58 146 86C146 72 132 60 100 58C68 60 54 72 54 86Z" fill="#1A1A1A"/>
+  <!-- Chef toque -->
+  <ellipse cx="100" cy="38" rx="35" ry="12" fill="white"/>
+  <rect x="70" y="22" width="60" height="18" rx="8" fill="white"/>
+  <ellipse cx="100" cy="22" rx="28" ry="14" fill="white"/>
+  <ellipse cx="88" cy="18" rx="14" ry="12" fill="#F8F8F8"/>
+  <ellipse cx="112" cy="18" rx="14" ry="12" fill="#F8F8F8"/>
+  <ellipse cx="100" cy="14" rx="12" ry="10" fill="#F5F5F5"/>
+  <!-- Eyes - warm -->
+  <ellipse cx="82" cy="100" rx="8" ry="7" fill="white"/>
+  <ellipse cx="118" cy="100" rx="8" ry="7" fill="white"/>
+  <ellipse cx="83" cy="100" rx="4.5" ry="4.5" fill="#2C1810"/>
+  <ellipse cx="119" cy="100" rx="4.5" ry="4.5" fill="#2C1810"/>
+  <ellipse cx="84.5" cy="98.5" rx="1.5" ry="1.5" fill="white"/>
+  <ellipse cx="120.5" cy="98.5" rx="1.5" ry="1.5" fill="white"/>
+  <!-- Friendly eyebrows -->
+  <path d="M72 90C76 86 88 87 92 90" stroke="#1A1A1A" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <path d="M108 90C112 87 124 86 128 90" stroke="#1A1A1A" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <!-- Nose -->
+  <path d="M96 106C96 106 92 114 96 116C100 118 104 118 108 116C108 114 104 106 104 106" stroke="#7A4A1E" stroke-width="1.5" fill="none"/>
+  <!-- Smile (under mustache) -->
+  <path d="M88 132C92 136 108 136 112 132" stroke="#6B3E1A" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <defs>
+    <radialGradient id="ravi-bg" cx="0.3" cy="0.3">
+      <stop offset="0%" stop-color="#4ECB71"/>
+      <stop offset="100%" stop-color="#0B1420"/>
+    </radialGradient>
+  </defs>
+</svg>

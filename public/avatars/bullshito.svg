@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <rect width="200" height="200" rx="40" fill="#0B1420"/>
+  <rect width="200" height="200" rx="40" fill="url(#bull-bg)" opacity="0.3"/>
+  <!-- Face base -->
+  <ellipse cx="100" cy="108" rx="52" ry="56" fill="#E8C39E"/>
+  <!-- Hair — slicked back, edgy -->
+  <path d="M48 88C48 58 72 38 100 38C128 38 152 58 152 88C152 74 136 62 100 62C64 62 48 74 48 88Z" fill="#2D1B4E"/>
+  <path d="M48 88C46 82 48 72 56 64" stroke="#2D1B4E" stroke-width="6" stroke-linecap="round"/>
+  <path d="M152 88C154 82 152 72 144 64" stroke="#2D1B4E" stroke-width="6" stroke-linecap="round"/>
+  <!-- Eyes — sharp, knowing look -->
+  <ellipse cx="78" cy="100" rx="9" ry="7" fill="white"/>
+  <ellipse cx="122" cy="100" rx="9" ry="7" fill="white"/>
+  <ellipse cx="80" cy="100" rx="4.5" ry="4.5" fill="#1A1A2E"/>
+  <ellipse cx="124" cy="100" rx="4.5" ry="4.5" fill="#1A1A2E"/>
+  <ellipse cx="81.5" cy="98.5" rx="1.5" ry="1.5" fill="white"/>
+  <ellipse cx="125.5" cy="98.5" rx="1.5" ry="1.5" fill="white"/>
+  <!-- Raised eyebrow (skeptical) -->
+  <path d="M67 88C72 82 86 83 92 86" stroke="#2D1B4E" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <path d="M108 86C114 83 128 82 133 88" stroke="#2D1B4E" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <!-- Nose -->
+  <path d="M96 108C96 108 93 116 97 118C101 118 107 118 107 116C105 108 104 108 104 108" stroke="#C4956B" stroke-width="1.5" fill="none"/>
+  <!-- Smirk — asymmetric, confident -->
+  <path d="M82 130C88 136 100 138 118 132" stroke="#A0652E" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <!-- Stubble -->
+  <circle cx="75" cy="138" r="0.8" fill="#2D1B4E" opacity="0.3"/>
+  <circle cx="80" cy="142" r="0.8" fill="#2D1B4E" opacity="0.3"/>
+  <circle cx="85" cy="145" r="0.8" fill="#2D1B4E" opacity="0.3"/>
+  <circle cx="90" cy="147" r="0.8" fill="#2D1B4E" opacity="0.3"/>
+  <circle cx="95" cy="148" r="0.8" fill="#2D1B4E" opacity="0.3"/>
+  <circle cx="100" cy="148" r="0.8" fill="#2D1B4E" opacity="0.3"/>
+  <circle cx="105" cy="147" r="0.8" fill="#2D1B4E" opacity="0.3"/>
+  <circle cx="110" cy="145" r="0.8" fill="#2D1B4E" opacity="0.3"/>
+  <circle cx="115" cy="142" r="0.8" fill="#2D1B4E" opacity="0.3"/>
+  <circle cx="120" cy="138" r="0.8" fill="#2D1B4E" opacity="0.3"/>
+  <circle cx="125" cy="134" r="0.8" fill="#2D1B4E" opacity="0.3"/>
+  <!-- Sunglasses on head -->
+  <path d="M58 72C58 72 68 66 82 66L88 66C92 66 94 68 94 68L106 68C108 68 110 66 112 66L118 66C132 66 142 72 142 72" stroke="#E040FB" stroke-width="2" fill="none" opacity="0.6"/>
+  <ellipse cx="75" cy="68" rx="14" ry="8" stroke="#E040FB" stroke-width="2" fill="#E040FB" fill-opacity="0.15"/>
+  <ellipse cx="125" cy="68" rx="14" ry="8" stroke="#E040FB" stroke-width="2" fill="#E040FB" fill-opacity="0.15"/>
+  <!-- Jacket collar / hoodie — purple accent -->
+  <path d="M52 172C52 150 72 140 100 138C128 140 148 150 148 172" fill="#1A0A2E"/>
+  <path d="M82 140L100 156L118 140" fill="#120720" stroke="#E040FB" stroke-width="1" opacity="0.6"/>
+  <!-- LinkedIn logo on chest (subtle) -->
+  <rect x="92" y="160" width="16" height="16" rx="3" fill="#0A66C2" opacity="0.4"/>
+  <text x="96" y="173" font-family="Arial" font-weight="bold" font-size="12" fill="white" opacity="0.5">in</text>
+  <defs>
+    <radialGradient id="bull-bg" cx="0.3" cy="0.3">
+      <stop offset="0%" stop-color="#E040FB"/>
+      <stop offset="100%" stop-color="#0B1420"/>
+    </radialGradient>
+  </defs>
+</svg>
