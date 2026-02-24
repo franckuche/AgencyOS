@@ -1,16 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-
-export interface ClientInfo {
-  id: string;
-  name: string;
-  sector: string;
-  url: string;
-}
+import { useState, useRef } from 'react';
+import { useClickOutside } from '@/hooks/useClickOutside';
+import type { ClientSummary } from '@/lib/types';
 
 interface ClientSelectorProps {
-  clients: ClientInfo[];
+  clients: ClientSummary[];
   selectedClient: string | null;
   onSelectClient: (id: string | null) => void;
   agentColor: string;
@@ -25,15 +20,7 @@ export default function ClientSelector({
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
+  useClickOutside(ref, () => setOpen(false), open);
 
   const current = clients.find((c) => c.id === selectedClient);
 
@@ -59,7 +46,6 @@ export default function ClientSelector({
 
       {open && (
         <div className="absolute top-full mt-1 right-0 w-64 bg-bg-card border border-border rounded-xl shadow-2xl z-50 overflow-hidden">
-          {/* No client option */}
           <button
             onClick={() => { onSelectClient(null); setOpen(false); }}
             className={`w-full text-left px-4 py-2.5 text-sm hover:bg-bg-hover transition-colors flex items-center gap-2 ${
@@ -72,7 +58,6 @@ export default function ClientSelector({
 
           <div className="border-t border-border" />
 
-          {/* Client list */}
           {clients.map((client) => (
             <button
               key={client.id}

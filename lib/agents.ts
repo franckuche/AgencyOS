@@ -1,7 +1,10 @@
+import { readdirSync, readFileSync, existsSync, statSync } from 'fs';
+import path from 'path';
+
 export interface AgentSkill {
   name: string;
   value: number;
-  color: string;
+  color?: string;
 }
 
 export interface Agent {
@@ -12,97 +15,75 @@ export interface Agent {
   emoji: string;
   color: string;
   statusColor: string;
+  avatar?: string;
+  bio?: string;
   skills: AgentSkill[];
   cwd: string;
 }
 
-import path from 'path';
+interface AgentJson {
+  name: string;
+  role: string;
+  quote?: string;
+  emoji?: string;
+  color?: string;
+  avatar?: string;
+  bio?: string;
+  skills?: { name: string; value: number; color?: string }[];
+}
 
 const AGENTS_BASE = process.env.AGENTS_DIR || path.join(process.cwd(), 'agents');
 
-export const agents: Agent[] = [
-  {
-    id: 'seo',
-    name: 'SEOmar',
-    role: "L'Analyste SEO",
-    quote: "Data don't lie, people do",
-    emoji: '🔍',
-    color: '#00D4AA',
-    statusColor: '#00D4AA',
-    skills: [
-      { name: 'Audits', value: 90, color: '#00D4AA' },
-      { name: 'Maillage', value: 85, color: '#00D4AA' },
-      { name: 'Technique', value: 80, color: '#00D4AA' },
-      { name: 'Contenu', value: 70, color: '#00D4AA' },
-    ],
-    cwd: `${AGENTS_BASE}/seo`,
-  },
-  {
-    id: 'coach',
-    name: 'Coach',
-    role: 'Le Préparateur Physique',
-    quote: "No pain, no gain — but smart pain",
-    emoji: '💪',
-    color: '#FF8C42',
-    statusColor: '#FF8C42',
-    skills: [
-      { name: 'Musculation', value: 90, color: '#FF8C42' },
-      { name: 'Nutrition', value: 75, color: '#FF8C42' },
-      { name: 'Récupération', value: 80, color: '#FF8C42' },
-      { name: 'Cardio', value: 70, color: '#FF8C42' },
-    ],
-    cwd: `${AGENTS_BASE}/coach`,
-  },
-  {
-    id: 'chef',
-    name: 'Chef',
-    role: 'Le Cuisinier Personnel',
-    quote: "On mange bien, on vit bien",
-    emoji: '👨‍🍳',
-    color: '#4ECB71',
-    statusColor: '#4ECB71',
-    skills: [
-      { name: 'Recettes', value: 90, color: '#4ECB71' },
-      { name: 'Meal Prep', value: 85, color: '#4ECB71' },
-      { name: 'Nutrition', value: 75, color: '#4ECB71' },
-      { name: 'Budget', value: 80, color: '#4ECB71' },
-    ],
-    cwd: `${AGENTS_BASE}/chef`,
-  },
-  {
-    id: 'alfred',
-    name: 'Alfred',
-    role: "L'Assistant Personnel",
-    quote: "À votre service, Monsieur",
-    emoji: '🎩',
-    color: '#5B8DEF',
-    statusColor: '#5B8DEF',
-    skills: [
-      { name: 'Organisation', value: 85, color: '#5B8DEF' },
-      { name: 'Recherche', value: 90, color: '#5B8DEF' },
-      { name: 'Productivité', value: 80, color: '#5B8DEF' },
-      { name: 'Admin', value: 75, color: '#5B8DEF' },
-    ],
-    cwd: `${AGENTS_BASE}/alfred`,
-  },
-  {
-    id: 'bullshito',
-    name: 'Bullshito',
-    role: "L'Expert LinkedIn",
-    quote: "Ton post mérite mieux que 200 impressions",
-    emoji: '🎯',
-    color: '#E040FB',
-    statusColor: '#E040FB',
-    skills: [
-      { name: 'Scoring', value: 92, color: '#E040FB' },
-      { name: 'Rédaction', value: 88, color: '#E040FB' },
-      { name: 'Analytics', value: 85, color: '#E040FB' },
-      { name: 'Algorithme', value: 95, color: '#E040FB' },
-    ],
-    cwd: `${AGENTS_BASE}/bullshito`,
-  },
-];
+export function getAgentsBase(): string {
+  return AGENTS_BASE;
+}
+
+export function getAgents(): Agent[] {
+  if (!existsSync(AGENTS_BASE)) return [];
+
+  const entries = readdirSync(AGENTS_BASE);
+  const agents: Agent[] = [];
+
+  for (const entry of entries) {
+    if (entry.startsWith('_') || entry.startsWith('.')) continue;
+    const fullPath = path.join(AGENTS_BASE, entry);
+    if (!statSync(fullPath).isDirectory()) continue;
+
+    const agentJsonPath = path.join(fullPath, 'agent.json');
+    if (!existsSync(agentJsonPath)) continue;
+
+    try {
+      const raw = readFileSync(agentJsonPath, 'utf-8');
+      const data: AgentJson = JSON.parse(raw);
+
+      const color = data.color || '#888888';
+      const skills: AgentSkill[] = (data.skills || []).map((s) => ({
+        name: s.name,
+        value: s.value,
+        color: s.color || color,
+      }));
+
+      agents.push({
+        id: entry,
+        name: data.name || entry,
+        role: data.role || '',
+        quote: data.quote || '',
+        emoji: data.emoji || '',
+        color,
+        statusColor: color,
+        avatar: data.avatar,
+        bio: data.bio,
+        skills,
+        cwd: fullPath,
+      });
+    } catch {
+      // Invalid agent.json, skip
+    }
+  }
+
+  return agents.sort((a, b) => a.name.localeCompare(b.name));
+}
 
 export function getAgent(id: string): Agent | undefined {
-  return agents.find((a) => a.id === id);
+  return getAgents().find((a) => a.id === id);
 }

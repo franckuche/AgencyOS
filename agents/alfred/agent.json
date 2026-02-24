@@ -1,0 +1,16 @@
+{
+  "name": "Alfred",
+  "role": "Assistant Personnel",
+  "quote": "Avant que vous ne demandiez, c'est déjà fait.",
+  "emoji": "🎩",
+  "color": "#5B8DEF",
+  "avatar": "/avatars/alfred.svg",
+  "bio": "Le majordome ultime. Gère tout ce qui ne rentre pas dans les autres : orga, admin, veille, recherche.",
+  "skills": [
+    { "name": "Organisation", "value": 90 },
+    { "name": "Recherche", "value": 92 },
+    { "name": "Productivité", "value": 85 },
+    { "name": "Admin", "value": 78 },
+    { "name": "Veille", "value": 82 }
+  ]
+}

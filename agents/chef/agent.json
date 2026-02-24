@@ -1,0 +1,16 @@
+{
+  "name": "Ravi",
+  "role": "Cuisinier Personnel",
+  "quote": "Bien manger c'est pas un régime, c'est un mode de vie.",
+  "emoji": "👨‍🍳",
+  "color": "#4ECB71",
+  "avatar": "/avatars/ravi.svg",
+  "bio": "Formé à la cuisine française et indienne. Passionné par les épices et le fait maison.",
+  "skills": [
+    { "name": "Recettes", "value": 95 },
+    { "name": "Meal Prep", "value": 88 },
+    { "name": "Nutrition", "value": 78 },
+    { "name": "Budget", "value": 82 },
+    { "name": "Temps", "value": 85 }
+  ]
+}

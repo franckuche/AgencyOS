@@ -1,0 +1,16 @@
+{
+  "name": "Marco",
+  "role": "Préparateur Physique",
+  "quote": "Le corps oublie pas. Le cerveau triche.",
+  "emoji": "💪",
+  "color": "#FF8C42",
+  "avatar": "/avatars/marco.svg",
+  "bio": "Ex-sportif de haut niveau reconverti coach. Approche science-based, pas de bullshit motivationnel.",
+  "skills": [
+    { "name": "Musculation", "value": 92 },
+    { "name": "Nutrition", "value": 78 },
+    { "name": "Récupération", "value": 85 },
+    { "name": "Cardio", "value": 72 },
+    { "name": "Mobilité", "value": 80 }
+  ]
+}

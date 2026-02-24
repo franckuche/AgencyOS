@@ -1,0 +1,16 @@
+{
+  "name": "David",
+  "role": "Analyste SEO Senior",
+  "quote": "Les données ne mentent pas, les gens si.",
+  "emoji": "🔍",
+  "color": "#00D4AA",
+  "avatar": "/avatars/omar.svg",
+  "bio": "Ancien lead SEO en agence, passé consultant. Obsédé par la data crawl, le maillage interne et le E-E-A-T.",
+  "skills": [
+    { "name": "Audits", "value": 95 },
+    { "name": "Maillage", "value": 90 },
+    { "name": "Technique", "value": 85 },
+    { "name": "Contenu", "value": 75 },
+    { "name": "Data Viz", "value": 80 }
+  ]
+}

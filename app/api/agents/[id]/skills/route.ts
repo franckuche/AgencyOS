@@ -8,6 +8,20 @@ interface SkillInfo {
   size: number;
   modified: string;
   preview: string;
+  category: string;
+}
+
+function parseCategory(filename: string): { category: string; baseName: string } {
+  const name = filename.replace('.md', '');
+  const underscoreIdx = name.indexOf('_');
+  if (underscoreIdx > 0) {
+    const prefix = name.substring(0, underscoreIdx);
+    // Only treat as category if the prefix doesn't contain numbers at the start (like 00_processus)
+    if (!/^\d/.test(prefix)) {
+      return { category: prefix, baseName: name.substring(underscoreIdx + 1) };
+    }
+  }
+  return { category: '', baseName: name };
 }
 
 export async function GET(
@@ -30,6 +44,7 @@ export async function GET(
     const content = readFileSync(fullPath, 'utf-8');
     const firstLine = content.split('\n').find(l => l.trim().startsWith('#'))?.replace(/^#+\s*/, '') || f;
     const preview = content.split('\n').filter(l => l.trim() && !l.startsWith('#')).slice(0, 2).join(' ').slice(0, 120);
+    const { category } = parseCategory(f);
 
     return {
       name: firstLine,
@@ -37,6 +52,7 @@ export async function GET(
       size: stat.size,
       modified: stat.mtime.toISOString(),
       preview,
+      category,
     };
   });
 

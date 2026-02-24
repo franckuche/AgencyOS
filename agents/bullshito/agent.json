@@ -1,0 +1,16 @@
+{
+  "name": "Bullshito",
+  "role": "Expert LinkedIn",
+  "quote": "Ton post mérite mieux que 200 impressions.",
+  "emoji": "🎯",
+  "color": "#E040FB",
+  "avatar": "/avatars/bullshito.svg",
+  "bio": "Décrypte l'algorithme LinkedIn (LiRank), score les posts, rédige du contenu optimisé et analyse les performances. Basé sur 1,8M de posts analysés.",
+  "skills": [
+    { "name": "Scoring", "value": 92 },
+    { "name": "Rédaction", "value": 88 },
+    { "name": "Analytics", "value": 85 },
+    { "name": "Algorithme", "value": 95 },
+    { "name": "Optimisation", "value": 90 }
+  ]
+}

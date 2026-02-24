@@ -1,31 +1,60 @@
-import { spawn } from 'child_process';
+import { spawn, ChildProcess } from 'child_process';
 import { readFileSync, existsSync, writeFileSync, appendFileSync, unlinkSync } from 'fs';
 import path from 'path';
 import { getAgent } from '@/lib/agents';
 import { getClient } from '@/lib/clients';
 
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 const LOG_FILE = '/tmp/qg-claude-debug.log';
+const PROCESS_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes max per request
+const QUEUE_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes max waiting in queue
 
 // Request queue — only one Claude CLI call at a time
-let queue: (() => void)[] = [];
+let queue: { resolve: () => void; reject: (err: Error) => void }[] = [];
 let running = false;
 
-function enqueue(): Promise<void> {
+function enqueue(signal?: AbortSignal): Promise<void> {
   if (!running) {
     running = true;
     return Promise.resolve();
   }
-  return new Promise<void>((resolve) => {
-    queue.push(resolve);
+  return new Promise<void>((resolve, reject) => {
+    const entry = { resolve, reject };
+    queue.push(entry);
+
+    // Queue timeout — don't wait forever
+    const timer = setTimeout(() => {
+      const idx = queue.indexOf(entry);
+      if (idx !== -1) {
+        queue.splice(idx, 1);
+        reject(new Error('Queue timeout'));
+      }
+    }, QUEUE_TIMEOUT_MS);
+
+    // If client disconnects while waiting in queue, remove from queue
+    signal?.addEventListener('abort', () => {
+      clearTimeout(timer);
+      const idx = queue.indexOf(entry);
+      if (idx !== -1) {
+        queue.splice(idx, 1);
+        reject(new Error('Client disconnected'));
+      }
+    });
+
+    // Clear timer when resolved
+    const origResolve = entry.resolve;
+    entry.resolve = () => {
+      clearTimeout(timer);
+      origResolve();
+    };
   });
 }
 
 function dequeue() {
   if (queue.length > 0) {
     const next = queue.shift()!;
-    next();
+    next.resolve();
   } else {
     running = false;
   }
@@ -33,7 +62,33 @@ function dequeue() {
 
 function log(msg: string) {
   const ts = new Date().toISOString();
-  appendFileSync(LOG_FILE, `[${ts}] ${msg}\n`);
+  try {
+    appendFileSync(LOG_FILE, `[${ts}] ${msg}\n`);
+  } catch {
+    // ignore log errors
+  }
+}
+
+function killProcess(proc: ChildProcess, reason: string) {
+  log(`Killing process: ${reason}`);
+  try {
+    // Kill the entire process group (bash + claude CLI)
+    if (proc.pid) process.kill(-proc.pid, 'SIGTERM');
+  } catch {
+    try { proc.kill('SIGTERM'); } catch {}
+  }
+  // Force kill after 3s if still alive
+  setTimeout(() => {
+    try {
+      if (proc.pid) process.kill(-proc.pid, 'SIGKILL');
+    } catch {
+      try { proc.kill('SIGKILL'); } catch {}
+    }
+  }, 3000);
+}
+
+function cleanupTempFile(filePath: string) {
+  try { unlinkSync(filePath); } catch {}
 }
 
 export async function POST(req: Request) {
@@ -69,15 +124,81 @@ export async function POST(req: Request) {
   log(`Agent: ${agent.name}, CWD: ${cwd}, Prompt length: ${prompt.length}`);
 
   // Wait for our turn in the queue
-  await enqueue();
+  try {
+    await enqueue(req.signal);
+  } catch (err) {
+    cleanupTempFile(promptFile);
+    const msg = err instanceof Error ? err.message : 'Queue error';
+    log(`Queue error: ${msg}`);
+    return new Response(JSON.stringify({ error: msg }), { status: 503 });
+  }
+
   log(`Queue: started processing for ${agent.name}`);
 
   const claudeBin = process.env.CLAUDE_BIN || 'claude';
-  const cmd = `unset CLAUDECODE CLAUDE_CODE_ENTRYPOINT; cat "${promptFile}" | ${claudeBin} -p --verbose --output-format stream-json --allowedTools "Read,Glob,Grep,Bash,Write,Edit,WebFetch,WebSearch"`;
 
-  const proc = spawn('/bin/bash', ['-c', cmd], { cwd });
+  // Check for MCP config
+  const mcpConfigPath = path.join(agent.cwd, 'mcp.json');
+  let mcpFlag = '';
+  let filteredMcpPath = '';
+  if (existsSync(mcpConfigPath)) {
+    try {
+      const mcpContent = JSON.parse(readFileSync(mcpConfigPath, 'utf-8'));
+      const servers = mcpContent.servers || {};
+      const enabledServers: Record<string, unknown> = {};
+      for (const [name, server] of Object.entries(servers)) {
+        const s = server as { enabled?: boolean };
+        if (s.enabled !== false) {
+          const { enabled: _, ...rest } = s as Record<string, unknown>;
+          enabledServers[name] = rest;
+        }
+      }
+      if (Object.keys(enabledServers).length > 0) {
+        filteredMcpPath = `/tmp/qg-mcp-${Date.now()}.json`;
+        writeFileSync(filteredMcpPath, JSON.stringify({ mcpServers: enabledServers }, null, 2));
+        mcpFlag = ` --mcp-config "${filteredMcpPath}"`;
+      }
+    } catch {
+      // Invalid mcp.json, skip
+    }
+  }
+
+  const allowedTools = mcpFlag
+    ? 'Read,Glob,Grep,Bash,Write,Edit,WebFetch,WebSearch,mcp:*'
+    : 'Read,Glob,Grep,Bash,Write,Edit,WebFetch,WebSearch';
+
+  const cmd = `unset CLAUDECODE CLAUDE_CODE_ENTRYPOINT; cat "${promptFile}" | ${claudeBin} -p --verbose --output-format stream-json --allowedTools "${allowedTools}"${mcpFlag}`;
+
+  // Spawn with process group so we can kill the whole tree
+  const proc = spawn('/bin/bash', ['-c', cmd], { cwd, detached: true });
 
   const encoder = new TextEncoder();
+
+  // Single cleanup guard — ensures dequeue() is called exactly once
+  let cleaned = false;
+  function cleanup(reason: string) {
+    if (cleaned) return;
+    cleaned = true;
+    log(`Cleanup: ${reason}`);
+    dequeue();
+    cleanupTempFile(promptFile);
+    if (filteredMcpPath) cleanupTempFile(filteredMcpPath);
+  }
+
+  // Process timeout — kill if it takes too long
+  const timeoutTimer = setTimeout(() => {
+    if (!cleaned) {
+      killProcess(proc, 'timeout');
+    }
+  }, PROCESS_TIMEOUT_MS);
+
+  // Client disconnect — kill process if the client goes away
+  req.signal.addEventListener('abort', () => {
+    clearTimeout(timeoutTimer);
+    if (!cleaned) {
+      killProcess(proc, 'client disconnected');
+    }
+  });
 
   const stream = new ReadableStream({
     start(controller) {
@@ -120,7 +241,6 @@ export async function POST(req: Request) {
                 }
               }
             } else if (event.type === 'user' && event.message?.content) {
-              // Tool results
               for (const block of event.message.content) {
                 if (block.type === 'tool_result') {
                   let snippet = '';
@@ -156,8 +276,8 @@ export async function POST(req: Request) {
       });
 
       proc.on('close', (code) => {
-        dequeue();
-        try { unlinkSync(promptFile); } catch {}
+        clearTimeout(timeoutTimer);
+        cleanup(`process closed with code ${code}`);
 
         // Process remaining buffer
         if (buffer.trim()) {
@@ -171,14 +291,13 @@ export async function POST(req: Request) {
           } catch {}
         }
 
-        log(`Process closed with code ${code}`);
         controller.close();
       });
 
       proc.on('error', (err) => {
-        dequeue();
-        try { unlinkSync(promptFile); } catch {}
-        log(`Process error: ${err.message}`);
+        clearTimeout(timeoutTimer);
+        cleanup(`process error: ${err.message}`);
+
         controller.enqueue(
           encoder.encode(
             JSON.stringify({ type: 'error', text: err.message }) + '\n'
