@@ -163,11 +163,13 @@ export async function POST(req: Request) {
     }
   }
 
-  const allowedTools = mcpFlag
-    ? 'Read,Glob,Grep,Bash,Write,Edit,WebFetch,WebSearch,mcp:*'
-    : 'Read,Glob,Grep,Bash,Write,Edit,WebFetch,WebSearch';
+  // When MCP is configured, don't restrict tools (MCP tool names use mcp__server__tool format
+  // and --allowedTools wildcards don't match them reliably, causing permission prompts)
+  const toolsFlag = mcpFlag
+    ? ''
+    : ' --allowedTools "Read,Glob,Grep,Bash,Write,Edit,WebFetch,WebSearch"';
 
-  const cmd = `unset CLAUDECODE CLAUDE_CODE_ENTRYPOINT; cat "${promptFile}" | ${claudeBin} -p --verbose --output-format stream-json --allowedTools "${allowedTools}"${mcpFlag}`;
+  const cmd = `unset CLAUDECODE CLAUDE_CODE_ENTRYPOINT; cat "${promptFile}" | ${claudeBin} -p --verbose --output-format stream-json${toolsFlag}${mcpFlag}`;
 
   // Spawn with process group so we can kill the whole tree
   const proc = spawn('/bin/bash', ['-c', cmd], { cwd, detached: true });
