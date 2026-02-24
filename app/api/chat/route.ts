@@ -163,13 +163,22 @@ export async function POST(req: Request) {
     }
   }
 
-  // When MCP is configured, don't restrict tools (MCP tool names use mcp__server__tool format
-  // and --allowedTools wildcards don't match them reliably, causing permission prompts)
-  const toolsFlag = mcpFlag
-    ? ''
-    : ' --allowedTools "Read,Glob,Grep,Bash,Write,Edit,WebFetch,WebSearch"';
+  // Build allowed tools list — include MCP server wildcards when MCP is configured
+  const baseTools = 'Read,Glob,Grep,Bash,Write,Edit,WebFetch,WebSearch';
+  let mcpToolPatterns = '';
+  if (mcpFlag && existsSync(mcpConfigPath)) {
+    try {
+      const mcpContent = JSON.parse(readFileSync(mcpConfigPath, 'utf-8'));
+      const serverNames = Object.keys(mcpContent.servers || {}).filter(
+        (name) => (mcpContent.servers[name] as { enabled?: boolean }).enabled !== false
+      );
+      if (serverNames.length > 0) {
+        mcpToolPatterns = ',' + serverNames.map((name) => `mcp__${name}__*`).join(',');
+      }
+    } catch {}
+  }
 
-  const cmd = `unset CLAUDECODE CLAUDE_CODE_ENTRYPOINT; cat "${promptFile}" | ${claudeBin} -p --verbose --output-format stream-json${toolsFlag}${mcpFlag}`;
+  const cmd = `unset CLAUDECODE CLAUDE_CODE_ENTRYPOINT; cat "${promptFile}" | ${claudeBin} -p --verbose --output-format stream-json --permission-mode bypassPermissions --allowedTools "${baseTools}${mcpToolPatterns}"${mcpFlag}`;
 
   // Spawn with process group so we can kill the whole tree
   const proc = spawn('/bin/bash', ['-c', cmd], { cwd, detached: true });
