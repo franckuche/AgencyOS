@@ -21,7 +21,7 @@ const FILE_ICONS: Record<string, string> = {
 };
 
 function getClientColor(name: string): string {
-  const colors = ['#00D4AA', '#FF8C42', '#4ECB71', '#5B8DEF', '#E040FB', '#FF6B6B', '#FFD93D', '#6BCB77', '#4D96FF', '#FF6B9D'];
+  const colors = ['#3B82F6', '#FF8C42', '#16A34A', '#5B8DEF', '#E040FB', '#FF6B6B', '#FFD93D', '#6BCB77', '#4D96FF', '#FF6B9D'];
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);

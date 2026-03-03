@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, writeFileSync, statSync, existsSync, mkdirSync } from 'fs';
 import path from 'path';
 import { getAgent } from '@/lib/agents';
+import { validateParam } from '@/lib/validation';
 
 interface SkillInfo {
   name: string;
@@ -29,6 +30,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const bad = validateParam(id);
+  if (bad) return bad;
   const agent = getAgent(id);
   if (!agent) return Response.json({ error: 'Agent not found' }, { status: 404 });
 
@@ -64,6 +67,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const bad = validateParam(id);
+  if (bad) return bad;
   const agent = getAgent(id);
   if (!agent) return Response.json({ error: 'Agent not found' }, { status: 404 });
 

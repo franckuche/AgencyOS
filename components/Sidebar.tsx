@@ -5,7 +5,7 @@ import AgentAvatar from './AgentAvatar';
 import CreateAgentModal from './CreateAgentModal';
 import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
 import { timeAgo } from '@/lib/utils';
-import type { AgentConfig, ConversationMeta, AppView } from '@/lib/types';
+import type { AgentConfig, ConversationMeta, AppView, SettingsTab } from '@/lib/types';
 
 interface SidebarProps {
   agents: AgentConfig[];
@@ -18,6 +18,8 @@ interface SidebarProps {
   onSelectAgent: (agentId: string) => void;
   activeView: AppView;
   onNavigate: (view: AppView) => void;
+  settingsTab: SettingsTab;
+  onSettingsTabChange: (tab: SettingsTab) => void;
   onAgentCreated?: () => void;
   isOpen?: boolean;
   onClose?: () => void;
@@ -34,6 +36,8 @@ export default function Sidebar({
   onSelectAgent,
   activeView,
   onNavigate,
+  settingsTab,
+  onSettingsTabChange,
   onAgentCreated,
 }: SidebarProps) {
   const getAgent = (id: string) => agents.find((a) => a.id === id);
@@ -64,27 +68,152 @@ export default function Sidebar({
       })
     : conversations;
 
-  const showChat = activeView === 'chat';
+  const showSettings = activeView === 'settings';
 
   return (
     <>
       <aside className="w-56 border-r border-border bg-bg-primary flex flex-col h-screen fixed left-0 top-0">
         {/* Logo */}
-        <div className="px-4 py-4 border-b border-border">
+        <div className="px-4 py-3.5 border-b border-border">
           <div
             className="flex items-center gap-2.5 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => onNavigate('chat')}
           >
             <div className="text-xl font-bold font-mono tracking-wider text-text-primary">
-              <span className="text-accent-cyan">Q</span>G
+              <span className="text-accent-cyan">A</span>O
             </div>
             <div className="text-[10px] text-text-muted uppercase tracking-widest">
-              Quartier Général
+              Agency OS
             </div>
           </div>
         </div>
 
-        {showChat ? (
+        {showSettings ? (
+          <>
+            {/* Settings mode: sub-navigation */}
+            <div className="px-4 py-3 border-b border-border">
+              <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold">
+                Settings
+              </p>
+            </div>
+            <nav className="flex-1 overflow-y-auto py-2">
+              {/* Agents tab */}
+              <button
+                onClick={() => onSettingsTabChange('agents')}
+                className={`relative w-full flex items-center gap-2.5 px-4 py-2.5 transition-all text-left ${
+                  settingsTab === 'agents' ? 'bg-bg-hover text-text-primary' : 'hover:bg-bg-hover/50 text-text-secondary'
+                }`}
+              >
+                {settingsTab === 'agents' && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 bg-accent-cyan rounded-r" />
+                )}
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className={settingsTab === 'agents' ? 'text-accent-cyan' : 'text-text-muted'}>
+                  <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                  <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                  <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                  <rect x="14" y="14" width="7" height="7" rx="1.5" />
+                </svg>
+                <span className="text-xs font-medium flex-1">Agents</span>
+                <span className="text-[10px] text-text-muted bg-bg-hover px-1.5 py-0.5 rounded-full font-mono">
+                  {agents.length}
+                </span>
+              </button>
+
+              {/* Agents list when agents tab active */}
+              {settingsTab === 'agents' && (
+                <div className="py-1 px-2">
+                  {agents.map((agent) => (
+                    <button
+                      key={agent.id}
+                      onClick={() => onSelectAgent(agent.id)}
+                      className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg mb-0.5 transition-all text-left ${
+                        activeAgentId === agent.id ? 'bg-bg-hover' : 'hover:bg-bg-hover/50'
+                      }`}
+                    >
+                      <div className="w-6 h-6 rounded-md overflow-hidden flex-shrink-0 ring-1 ring-border">
+                        <AgentAvatar
+                          avatar={agent.avatar}
+                          emoji={agent.emoji}
+                          name={agent.name}
+                          color={agent.color}
+                          size={24}
+                          className="w-full h-full"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className={`text-[11px] font-medium truncate block ${
+                          activeAgentId === agent.id ? 'text-text-primary' : 'text-text-secondary'
+                        }`}>
+                          {agent.name}
+                        </span>
+                        <span className="text-[10px] text-text-muted truncate block">
+                          {agent.role}
+                        </span>
+                      </div>
+                      <span
+                        className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: agent.statusColor }}
+                      />
+                    </button>
+                  ))}
+
+                  {/* Nouvel agent */}
+                  <button
+                    onClick={() => setShowCreateAgent(true)}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg mt-1 transition-all text-left hover:bg-bg-hover/50 border border-dashed border-border"
+                  >
+                    <div className="w-6 h-6 rounded-md flex items-center justify-center bg-bg-hover flex-shrink-0">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-muted" strokeLinecap="round">
+                        <line x1="12" y1="5" x2="12" y2="19" />
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                      </svg>
+                    </div>
+                    <span className="text-[11px] text-text-muted font-medium">
+                      Nouvel agent
+                    </span>
+                  </button>
+                </div>
+              )}
+
+              {/* Separator */}
+              <div className="mx-4 my-1.5 border-t border-border/50" />
+
+              {/* Clients tab */}
+              <button
+                onClick={() => onSettingsTabChange('clients')}
+                className={`relative w-full flex items-center gap-2.5 px-4 py-2.5 transition-all text-left ${
+                  settingsTab === 'clients' ? 'bg-bg-hover text-text-primary' : 'hover:bg-bg-hover/50 text-text-secondary'
+                }`}
+              >
+                {settingsTab === 'clients' && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 bg-accent-cyan rounded-r" />
+                )}
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className={settingsTab === 'clients' ? 'text-accent-cyan' : 'text-text-muted'}>
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                <span className="text-xs font-medium flex-1">Clients</span>
+              </button>
+
+              {/* Config tab */}
+              <button
+                onClick={() => onSettingsTabChange('config')}
+                className={`relative w-full flex items-center gap-2.5 px-4 py-2.5 transition-all text-left ${
+                  settingsTab === 'config' ? 'bg-bg-hover text-text-primary' : 'hover:bg-bg-hover/50 text-text-secondary'
+                }`}
+              >
+                {settingsTab === 'config' && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 bg-accent-cyan rounded-r" />
+                )}
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={settingsTab === 'config' ? 'text-accent-cyan' : 'text-text-muted'}>
+                  <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <span className="text-xs font-medium flex-1">Configuration</span>
+              </button>
+            </nav>
+          </>
+        ) : (
           <>
             {/* Chat mode: New conversation + Search + Conversations list */}
             <div className="px-4 py-3 border-b border-border">
@@ -207,82 +336,14 @@ export default function Sidebar({
               )}
             </nav>
           </>
-        ) : (
-          <>
-            {/* Config/Clients mode: Agents list (no history) */}
-            <div className="px-3 pt-3 pb-1">
-              <p className="text-[10px] text-text-muted uppercase tracking-wider font-medium px-2 mb-2">
-                Agents
-              </p>
-            </div>
-            <nav className="flex-1 overflow-y-auto px-2">
-              {agents.map((agent) => {
-                const isActive = activeAgentId === agent.id;
-
-                return (
-                  <button
-                    key={agent.id}
-                    onClick={() => onSelectAgent(agent.id)}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg mb-0.5 transition-all text-left ${
-                      isActive ? 'bg-bg-hover' : 'hover:bg-bg-hover/50'
-                    }`}
-                  >
-                    <div className="w-7 h-7 rounded-lg overflow-hidden flex-shrink-0 ring-1 ring-border">
-                      <AgentAvatar
-                        avatar={agent.avatar}
-                        emoji={agent.emoji}
-                        name={agent.name}
-                        color={agent.color}
-                        size={28}
-                        className="w-full h-full"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-xs font-medium truncate ${
-                        isActive ? 'text-text-primary' : 'text-text-secondary'
-                      }`}>
-                        {agent.name}
-                      </p>
-                      <p className="text-[10px] text-text-muted truncate">
-                        {agent.role}
-                      </p>
-                    </div>
-                    <span
-                      className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: agent.color }}
-                    />
-                  </button>
-                );
-              })}
-            </nav>
-          </>
         )}
 
         {/* Bottom nav */}
         <div className="border-t border-border px-2 py-2">
           <button
-            onClick={() => onNavigate('clients')}
+            onClick={() => onNavigate('settings')}
             className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg mb-0.5 transition-all text-left ${
-              activeView === 'clients' ? 'bg-bg-hover' : 'hover:bg-bg-hover/50'
-            }`}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-muted" strokeLinecap="round">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-            <span className={`text-xs font-medium ${
-              activeView === 'clients' ? 'text-text-primary' : 'text-text-secondary'
-            }`}>
-              Clients
-            </span>
-          </button>
-
-          <button
-            onClick={() => onNavigate('config')}
-            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg mb-0.5 transition-all text-left ${
-              activeView === 'config' ? 'bg-bg-hover' : 'hover:bg-bg-hover/50'
+              showSettings ? 'bg-bg-hover' : 'hover:bg-bg-hover/50'
             }`}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-muted" strokeLinecap="round" strokeLinejoin="round">
@@ -290,24 +351,9 @@ export default function Sidebar({
               <circle cx="12" cy="12" r="3" />
             </svg>
             <span className={`text-xs font-medium ${
-              activeView === 'config' ? 'text-text-primary' : 'text-text-secondary'
+              showSettings ? 'text-text-primary' : 'text-text-secondary'
             }`}>
-              Configuration
-            </span>
-          </button>
-
-          {/* Create agent button */}
-          <button
-            onClick={() => setShowCreateAgent(true)}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg mb-0.5 transition-all text-left hover:bg-bg-hover/50"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-muted" strokeLinecap="round">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="16" />
-              <line x1="8" y1="12" x2="16" y2="12" />
-            </svg>
-            <span className="text-xs font-medium text-text-secondary">
-              Nouvel agent
+              Settings
             </span>
           </button>
 

@@ -9,7 +9,7 @@ interface CreateAgentModalProps {
 }
 
 const EMOJI_PICKS = ['🤖', '🎯', '🔍', '💪', '👨‍🍳', '🎩', '📊', '✍️', '🧠', '⚡', '🎨', '📈', '🛠️', '🌐', '💡', '🔬'];
-const COLOR_PICKS = ['#00D4AA', '#FF8C42', '#4ECB71', '#5B8DEF', '#E040FB', '#FF6B6B', '#FFD93D', '#6BCB77', '#4D96FF', '#FF6B9D'];
+const COLOR_PICKS = ['#3B82F6', '#FF8C42', '#16A34A', '#5B8DEF', '#E040FB', '#FF6B6B', '#FFD93D', '#6BCB77', '#4D96FF', '#FF6B9D'];
 
 const STEP_LABELS = ['Identite', 'Personnalite', 'Apercu'];
 
@@ -167,7 +167,7 @@ export default function CreateAgentModal({ onClose, onCreated }: CreateAgentModa
                           key={c}
                           onClick={() => setColor(c)}
                           className={`w-9 h-9 rounded-full transition-all ${
-                            color === c ? 'ring-2 ring-white scale-110 shadow-lg' : 'hover:scale-105'
+                            color === c ? 'ring-2 ring-gray-800 scale-110 shadow-lg' : 'hover:scale-105'
                           }`}
                           style={{
                             backgroundColor: c,

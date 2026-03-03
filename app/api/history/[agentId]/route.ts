@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import path from 'path';
+import { validateParam } from '@/lib/validation';
 
 const DATA_DIR = path.join(process.cwd(), '.data', 'history');
 
@@ -12,6 +13,8 @@ export async function GET(
   { params }: { params: Promise<{ agentId: string }> }
 ) {
   const { agentId } = await params;
+  const bad = validateParam(agentId, 'agentId');
+  if (bad) return bad;
   const filePath = getHistoryPath(agentId);
 
   if (!existsSync(filePath)) {
@@ -31,6 +34,8 @@ export async function POST(
   { params }: { params: Promise<{ agentId: string }> }
 ) {
   const { agentId } = await params;
+  const bad = validateParam(agentId, 'agentId');
+  if (bad) return bad;
   const { messages } = await req.json();
 
   if (!Array.isArray(messages)) {
@@ -52,6 +57,8 @@ export async function DELETE(
   { params }: { params: Promise<{ agentId: string }> }
 ) {
   const { agentId } = await params;
+  const bad = validateParam(agentId, 'agentId');
+  if (bad) return bad;
   const filePath = getHistoryPath(agentId);
 
   if (existsSync(filePath)) {

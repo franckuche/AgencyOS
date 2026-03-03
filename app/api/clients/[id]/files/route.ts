@@ -1,9 +1,10 @@
 import { readdirSync, statSync, existsSync, mkdirSync, writeFileSync } from 'fs';
 import path from 'path';
 import { getClient } from '@/lib/clients';
+import { validateParam } from '@/lib/validation';
 
 const ALLOWED_EXTENSIONS = ['.csv', '.pdf', '.xlsx', '.xls', '.docx', '.doc'];
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 Mo
+const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500 Mo
 
 interface FileInfo {
   name: string;
@@ -29,6 +30,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const bad = validateParam(id);
+  if (bad) return bad;
   const client = getClient(id);
   if (!client) {
     return Response.json({ error: 'Client not found' }, { status: 404 });
@@ -82,6 +85,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const bad = validateParam(id);
+  if (bad) return bad;
   const client = getClient(id);
   if (!client) {
     return Response.json({ error: 'Client not found' }, { status: 404 });

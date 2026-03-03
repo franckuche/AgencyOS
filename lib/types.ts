@@ -122,4 +122,5 @@ export interface UploadedFile {
 
 // ── Navigation ───────────────────────────────────────────────────────────────
 
-export type AppView = 'chat' | 'clients' | 'config';
+export type AppView = 'chat' | 'settings';
+export type SettingsTab = 'agents' | 'clients' | 'config';

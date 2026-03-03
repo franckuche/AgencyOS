@@ -4,11 +4,12 @@ import path from 'path';
 import { getAgent } from '@/lib/agents';
 import { getClient } from '@/lib/clients';
 
-export const maxDuration = 300;
+export const maxDuration = 2400;
 
 const LOG_FILE = '/tmp/qg-claude-debug.log';
-const PROCESS_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes max per request
-const QUEUE_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes max waiting in queue
+const PROCESS_TIMEOUT_MS = 40 * 60 * 1000; // 40 minutes max per request
+const QUEUE_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes max waiting in queue
+const MAX_RETRIES = 1; // 1 retry on exit code 1
 
 // Request queue — only one Claude CLI call at a time
 let queue: { resolve: () => void; reject: (err: Error) => void }[] = [];
@@ -120,6 +121,7 @@ export async function POST(req: Request) {
   // Write prompt to temp file to avoid shell escaping issues
   const promptFile = `/tmp/qg-prompt-${Date.now()}.txt`;
   writeFileSync(promptFile, prompt);
+  const promptContent = readFileSync(promptFile, 'utf-8');
 
   log(`Agent: ${agent.name}, CWD: ${cwd}, Prompt length: ${prompt.length}`);
 
@@ -139,7 +141,6 @@ export async function POST(req: Request) {
 
   // Check for MCP config
   const mcpConfigPath = path.join(agent.cwd, 'mcp.json');
-  let mcpFlag = '';
   let filteredMcpPath = '';
   if (existsSync(mcpConfigPath)) {
     try {
@@ -156,7 +157,6 @@ export async function POST(req: Request) {
       if (Object.keys(enabledServers).length > 0) {
         filteredMcpPath = `/tmp/qg-mcp-${Date.now()}.json`;
         writeFileSync(filteredMcpPath, JSON.stringify({ mcpServers: enabledServers }, null, 2));
-        mcpFlag = ` --mcp-config "${filteredMcpPath}"`;
       }
     } catch {
       // Invalid mcp.json, skip
@@ -166,7 +166,7 @@ export async function POST(req: Request) {
   // Build allowed tools list — include MCP server wildcards when MCP is configured
   const baseTools = 'Read,Glob,Grep,Bash,Write,Edit,WebFetch,WebSearch';
   let mcpToolPatterns = '';
-  if (mcpFlag && existsSync(mcpConfigPath)) {
+  if (filteredMcpPath && existsSync(mcpConfigPath)) {
     try {
       const mcpContent = JSON.parse(readFileSync(mcpConfigPath, 'utf-8'));
       const serverNames = Object.keys(mcpContent.servers || {}).filter(
@@ -178,10 +178,22 @@ export async function POST(req: Request) {
     } catch {}
   }
 
-  const cmd = `unset CLAUDECODE CLAUDE_CODE_ENTRYPOINT; cat "${promptFile}" | ${claudeBin} -p --verbose --output-format stream-json --permission-mode bypassPermissions --allowedTools "${baseTools}${mcpToolPatterns}"${mcpFlag}`;
+  // Build args array — no shell involved
+  const claudeArgs = [
+    '-p',
+    '--verbose',
+    '--output-format', 'stream-json',
+    '--permission-mode', 'bypassPermissions',
+    '--allowedTools', `${baseTools}${mcpToolPatterns}`,
+  ];
+  if (filteredMcpPath) {
+    claudeArgs.push('--mcp-config', filteredMcpPath);
+  }
 
-  // Spawn with process group so we can kill the whole tree
-  const proc = spawn('/bin/bash', ['-c', cmd], { cwd, detached: true });
+  // Spawn env — prevent Claude Code recursion
+  const spawnEnv = { ...process.env };
+  delete spawnEnv.CLAUDECODE;
+  delete spawnEnv.CLAUDE_CODE_ENTRYPOINT;
 
   const encoder = new TextEncoder();
 
@@ -196,133 +208,207 @@ export async function POST(req: Request) {
     if (filteredMcpPath) cleanupTempFile(filteredMcpPath);
   }
 
+  // Track current process for timeout/abort handlers
+  let currentProc: ChildProcess | null = null;
+
   // Process timeout — kill if it takes too long
   const timeoutTimer = setTimeout(() => {
-    if (!cleaned) {
-      killProcess(proc, 'timeout');
+    if (!cleaned && currentProc) {
+      killProcess(currentProc, 'timeout');
     }
   }, PROCESS_TIMEOUT_MS);
 
   // Client disconnect — kill process if the client goes away
   req.signal.addEventListener('abort', () => {
     clearTimeout(timeoutTimer);
-    if (!cleaned) {
-      killProcess(proc, 'client disconnected');
+    if (!cleaned && currentProc) {
+      killProcess(currentProc, 'client disconnected');
     }
   });
 
   const stream = new ReadableStream({
     start(controller) {
-      let buffer = '';
+      let attempt = 0;
 
-      proc.stdout.on('data', (chunk: Buffer) => {
-        buffer += chunk.toString();
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
+      function spawnAttempt() {
+        let buffer = '';
+        let stderrBuffer = '';
 
-        for (const line of lines) {
-          if (!line.trim()) continue;
+        const proc = spawn(claudeBin, claudeArgs, {
+          cwd,
+          detached: true,
+          stdio: ['pipe', 'pipe', 'pipe'],
+          env: spawnEnv,
+        });
+        currentProc = proc;
+
+        log(`Spawn attempt ${attempt + 1} for ${agent.name}, PID: ${proc.pid}`);
+
+        // Feed prompt via stdin
+        proc.stdin.write(promptContent);
+        proc.stdin.end();
+
+        // Heartbeat — keep connection alive while CLI is thinking
+        const heartbeat = setInterval(() => {
           try {
-            const event = JSON.parse(line);
-
-            if (event.type === 'assistant' && event.message?.content) {
-              for (const block of event.message.content) {
-                if (block.type === 'thinking') {
-                  controller.enqueue(
-                    encoder.encode(
-                      JSON.stringify({ type: 'thinking', text: block.thinking }) + '\n'
-                    )
-                  );
-                } else if (block.type === 'text') {
-                  controller.enqueue(
-                    encoder.encode(
-                      JSON.stringify({ type: 'text', text: block.text }) + '\n'
-                    )
-                  );
-                } else if (block.type === 'tool_use') {
-                  controller.enqueue(
-                    encoder.encode(
-                      JSON.stringify({
-                        type: 'tool_use',
-                        name: block.name,
-                        input: block.input,
-                      }) + '\n'
-                    )
-                  );
-                }
-              }
-            } else if (event.type === 'user' && event.message?.content) {
-              for (const block of event.message.content) {
-                if (block.type === 'tool_result') {
-                  let snippet = '';
-                  if (typeof block.content === 'string') {
-                    snippet = block.content.slice(0, 500);
-                  } else if (Array.isArray(block.content)) {
-                    snippet = block.content
-                      .filter((c: { type: string }) => c.type === 'text')
-                      .map((c: { text: string }) => c.text)
-                      .join('\n')
-                      .slice(0, 500);
-                  }
-                  controller.enqueue(
-                    encoder.encode(
-                      JSON.stringify({ type: 'tool_result', snippet }) + '\n'
-                    )
-                  );
-                }
-              }
-            } else if (event.type === 'result') {
-              controller.enqueue(
-                encoder.encode(JSON.stringify({ type: 'done' }) + '\n')
-              );
-            }
+            controller.enqueue(encoder.encode(JSON.stringify({ type: 'ping' }) + '\n'));
           } catch {
-            // Not valid JSON line, skip
+            clearInterval(heartbeat);
           }
-        }
-      });
+        }, 5_000);
 
-      proc.stderr.on('data', (chunk: Buffer) => {
-        log(`STDERR: ${chunk.toString()}`);
-      });
+        // --- FIX 2: Capture stderr into buffer ---
+        proc.stderr.on('data', (chunk: Buffer) => {
+          const text = chunk.toString();
+          stderrBuffer += text;
+          log(`STDERR: ${text}`);
+        });
 
-      proc.on('close', (code) => {
-        clearTimeout(timeoutTimer);
-        cleanup(`process closed with code ${code}`);
+        proc.stdout.on('data', (chunk: Buffer) => {
+          buffer += chunk.toString();
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
 
-        // Process remaining buffer
-        if (buffer.trim()) {
-          try {
-            const event = JSON.parse(buffer);
-            if (event.type === 'result') {
-              controller.enqueue(
-                encoder.encode(JSON.stringify({ type: 'done' }) + '\n')
-              );
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            try {
+              const event = JSON.parse(line);
+
+              if (event.type === 'assistant' && event.message?.content) {
+                for (const block of event.message.content) {
+                  if (block.type === 'thinking') {
+                    controller.enqueue(
+                      encoder.encode(
+                        JSON.stringify({ type: 'thinking', text: block.thinking }) + '\n'
+                      )
+                    );
+                  } else if (block.type === 'text') {
+                    controller.enqueue(
+                      encoder.encode(
+                        JSON.stringify({ type: 'text', text: block.text }) + '\n'
+                      )
+                    );
+                  } else if (block.type === 'tool_use') {
+                    controller.enqueue(
+                      encoder.encode(
+                        JSON.stringify({
+                          type: 'tool_use',
+                          name: block.name,
+                          input: block.input,
+                        }) + '\n'
+                      )
+                    );
+                  }
+                }
+              } else if (event.type === 'user' && event.message?.content) {
+                for (const block of event.message.content) {
+                  if (block.type === 'tool_result') {
+                    let snippet = '';
+                    if (typeof block.content === 'string') {
+                      snippet = block.content.slice(0, 500);
+                    } else if (Array.isArray(block.content)) {
+                      snippet = block.content
+                        .filter((c: { type: string }) => c.type === 'text')
+                        .map((c: { text: string }) => c.text)
+                        .join('\n')
+                        .slice(0, 500);
+                    }
+                    controller.enqueue(
+                      encoder.encode(
+                        JSON.stringify({ type: 'tool_result', snippet }) + '\n'
+                      )
+                    );
+                  }
+                }
+              } else if (event.type === 'result') {
+                controller.enqueue(
+                  encoder.encode(JSON.stringify({ type: 'done' }) + '\n')
+                );
+              }
+            } catch {
+              // Not valid JSON line, skip
             }
-          } catch {}
-        }
+          }
+        });
 
-        controller.close();
-      });
+        proc.on('close', (code) => {
+          clearInterval(heartbeat);
 
-      proc.on('error', (err) => {
-        clearTimeout(timeoutTimer);
-        cleanup(`process error: ${err.message}`);
+          // Process remaining buffer
+          if (buffer.trim()) {
+            try {
+              const event = JSON.parse(buffer);
+              if (event.type === 'result') {
+                controller.enqueue(
+                  encoder.encode(JSON.stringify({ type: 'done' }) + '\n')
+                );
+              }
+            } catch {}
+          }
 
-        controller.enqueue(
-          encoder.encode(
-            JSON.stringify({ type: 'error', text: err.message }) + '\n'
-          )
-        );
-        controller.close();
-      });
+          // Success or client-initiated kill
+          if (code === 0 || code === null || req.signal.aborted) {
+            clearTimeout(timeoutTimer);
+            cleanup(`process closed with code ${code}`);
+            controller.close();
+            return;
+          }
+
+          // --- FIX 3: Auto-retry on exit code 1 ---
+          if (code === 1 && attempt < MAX_RETRIES && !req.signal.aborted) {
+            attempt++;
+            log(`Retry attempt ${attempt} after exit code ${code}, stderr: ${stderrBuffer.slice(-200)}`);
+            controller.enqueue(encoder.encode(JSON.stringify({
+              type: 'text',
+              text: '\n\n⚡ Erreur interne — nouvelle tentative automatique...\n\n',
+            }) + '\n'));
+            spawnAttempt();
+            return;
+          }
+
+          // --- FIX 1: Send real error to frontend ---
+          clearTimeout(timeoutTimer);
+          cleanup(`process closed with code ${code} after ${attempt + 1} attempt(s)`);
+
+          const stderrTail = stderrBuffer.trim().slice(-500);
+          const errorDetail = stderrTail
+            ? `Claude a planté (code ${code}). Détail :\n${stderrTail}`
+            : `Claude a planté (code ${code}). Relance ta question.`;
+
+          log(`Final error for ${agent.name}: ${errorDetail.slice(0, 200)}`);
+
+          controller.enqueue(encoder.encode(JSON.stringify({
+            type: 'error',
+            text: errorDetail,
+          }) + '\n'));
+          controller.close();
+        });
+
+        proc.on('error', (err) => {
+          clearInterval(heartbeat);
+          clearTimeout(timeoutTimer);
+          cleanup(`process error: ${err.message}`);
+
+          controller.enqueue(
+            encoder.encode(
+              JSON.stringify({ type: 'error', text: `Erreur de lancement Claude CLI: ${err.message}` }) + '\n'
+            )
+          );
+          controller.close();
+        });
+      }
+
+      // Start first attempt
+      spawnAttempt();
     },
   });
 
   return new Response(stream, {
     headers: {
       'Content-Type': 'application/x-ndjson',
-      'Cache-Control': 'no-cache',
+      'Cache-Control': 'no-cache, no-transform',
+      'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
       'X-Agent': agent.name,
     },
   });

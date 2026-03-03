@@ -13,6 +13,7 @@ interface ChatPanelProps {
   onChangeAgent: (agentId: string) => void;
   messages: Message[];
   onSendMessage: (agentId: string, message: string, clientId: string | null) => void;
+  onStop: () => void;
   isLoading: boolean;
   streamingText: string;
   streamingThinking: string;
@@ -29,6 +30,7 @@ export default function ChatPanel({
   onChangeAgent,
   messages,
   onSendMessage,
+  onStop,
   isLoading,
   streamingText,
   streamingThinking,
@@ -103,7 +105,7 @@ export default function ChatPanel({
       )}
 
       {/* Top bar */}
-      <div className="border-b border-border px-5 py-3 flex items-center gap-3 bg-bg-primary/80 backdrop-blur-md sticky top-0 z-10">
+      <div className="border-b border-border px-5 py-3.5 flex items-center gap-3.5 bg-bg-primary/80 backdrop-blur-md sticky top-0 z-10">
         {onOpenSidebar && (
           <button
             onClick={onOpenSidebar}
@@ -116,12 +118,12 @@ export default function ChatPanel({
             </svg>
           </button>
         )}
-        <div className="rounded-lg overflow-hidden flex-shrink-0 ring-1 ring-border" style={{ width: 32, height: 32 }}>
-          <AgentAvatar avatar={agent.avatar} emoji={agent.emoji} name={agent.name} color={agent.color} size={32} className="w-full h-full" />
+        <div className="rounded-lg overflow-hidden flex-shrink-0 ring-1 ring-border" style={{ width: 36, height: 36 }}>
+          <AgentAvatar avatar={agent.avatar} emoji={agent.emoji} name={agent.name} color={agent.color} size={36} className="w-full h-full" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold text-text-primary">{agent.name}</h2>
+            <h2 className="text-[15px] font-semibold text-text-primary">{agent.name}</h2>
             <span className="text-xs text-text-muted">{agent.role}</span>
           </div>
         </div>
@@ -200,6 +202,7 @@ export default function ChatPanel({
         agents={agents}
         onChangeAgent={onChangeAgent}
         onSendMessage={onSendMessage}
+        onStop={onStop}
         isLoading={isLoading}
         selectedClient={selectedClient}
         clients={clients}

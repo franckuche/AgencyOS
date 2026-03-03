@@ -9,10 +9,11 @@ import { useAgents } from '@/hooks/useAgents';
 import { useClients } from '@/hooks/useClients';
 import { useConversations } from '@/hooks/useConversations';
 import { useStreamingChat } from '@/hooks/useStreamingChat';
-import type { AppView } from '@/lib/types';
+import type { AppView, SettingsTab } from '@/lib/types';
 
 export default function Home() {
   const [activeView, setActiveView] = useState<AppView>('chat');
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>('agents');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const { agents, refresh: refreshAgents } = useAgents();
@@ -39,8 +40,14 @@ export default function Home() {
   };
 
   const handleSelectAgent = (agentId: string) => {
-    conv.newConversation(agentId);
-    setActiveView('chat');
+    if (activeView === 'settings') {
+      // In settings mode, selecting an agent shows its config
+      conv.newConversation(agentId);
+      setSettingsTab('config');
+    } else {
+      conv.newConversation(agentId);
+      setActiveView('chat');
+    }
   };
 
   const handleSelectClientForChat = (clientId: string) => {
@@ -69,21 +76,25 @@ export default function Home() {
         onSelectAgent={handleSelectAgent}
         activeView={activeView}
         onNavigate={setActiveView}
+        settingsTab={settingsTab}
+        onSettingsTabChange={setSettingsTab}
         onAgentCreated={refreshAgents}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
       />
 
       <main className="md:ml-56 flex-1 w-full min-w-0">
-        {activeView === 'config' ? (
+        {activeView === 'settings' && settingsTab === 'config' ? (
           <AgentConfigPage agents={agents} onAgentsChanged={refreshAgents} onOpenSidebar={() => setIsSidebarOpen(true)} />
-        ) : activeView === 'clients' ? (
+        ) : activeView === 'settings' && settingsTab === 'clients' ? (
           <ClientsPage
             clients={clients}
             onRefresh={refreshClients}
             onSelectClientForChat={handleSelectClientForChat}
             onOpenSidebar={() => setIsSidebarOpen(true)}
           />
+        ) : activeView === 'settings' && settingsTab === 'agents' ? (
+          <AgentConfigPage agents={agents} onAgentsChanged={refreshAgents} onOpenSidebar={() => setIsSidebarOpen(true)} />
         ) : (
           <ChatPanel
             agent={currentAgent}
@@ -91,6 +102,7 @@ export default function Home() {
             onChangeAgent={conv.updateConversation}
             messages={conv.activeConversation?.messages || []}
             onSendMessage={chat.sendMessage}
+            onStop={chat.stopGeneration}
             isLoading={chat.isLoading}
             streamingText={chat.streamingText}
             streamingThinking={chat.streamingThinking}

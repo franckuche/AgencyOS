@@ -1,12 +1,15 @@
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import path from 'path';
 import { getClient } from '@/lib/clients';
+import { validateParam } from '@/lib/validation';
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const bad = validateParam(id);
+  if (bad) return bad;
   const client = getClient(id);
   if (!client) {
     return Response.json({ error: 'Client not found' }, { status: 404 });

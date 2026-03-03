@@ -1,12 +1,15 @@
 import { readFileSync, writeFileSync, existsSync, rmSync } from 'fs';
 import path from 'path';
 import { getAgent, getAgentsBase } from '@/lib/agents';
+import { validateParam } from '@/lib/validation';
 
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const bad = validateParam(id);
+  if (bad) return bad;
   const agent = getAgent(id);
   if (!agent) return Response.json({ error: 'Agent not found' }, { status: 404 });
   return Response.json(agent);
@@ -17,6 +20,8 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const bad = validateParam(id);
+  if (bad) return bad;
   const agentDir = path.join(getAgentsBase(), id);
   const agentJsonPath = path.join(agentDir, 'agent.json');
 
@@ -48,6 +53,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const bad = validateParam(id);
+  if (bad) return bad;
   const agentDir = path.join(getAgentsBase(), id);
 
   if (!existsSync(agentDir)) {

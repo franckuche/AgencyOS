@@ -35,7 +35,7 @@ export default function MessageList({
   const hasStreamingActivity = streamingText || streamingThinking || streamingTools.length > 0;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 space-y-1">
+    <div className="max-w-4xl mx-auto px-4 py-6 space-y-1">
       {messages.map((msg, i) => (
         <MessageBubble key={i} message={msg} agent={agent} clients={clients} />
       ))}
@@ -43,9 +43,9 @@ export default function MessageList({
       {/* Streaming response */}
       {isLoading && hasStreamingActivity && (
         <div className="chat-message chat-message-assistant">
-          <div className="flex gap-3 py-4">
-            <div className="w-7 h-7 rounded-lg overflow-hidden flex-shrink-0 mt-0.5 ring-1 ring-border">
-              <AgentAvatar avatar={agent.avatar} emoji={agent.emoji} name={agent.name} color={agent.color} size={28} className="w-full h-full" />
+          <div className="flex gap-3.5 py-5">
+            <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 mt-0.5 ring-1 ring-border">
+              <AgentAvatar avatar={agent.avatar} emoji={agent.emoji} name={agent.name} color={agent.color} size={32} className="w-full h-full" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
@@ -56,10 +56,11 @@ export default function MessageList({
                   thinking={streamingThinking}
                   toolCalls={streamingTools}
                   defaultOpen={true}
+                  isStreaming={true}
                 />
               )}
               {streamingText && (
-                <div className="chat-markdown text-[13.5px] leading-relaxed text-text-primary">
+                <div className="chat-markdown text-[14.5px] leading-relaxed text-text-primary">
                   <MarkdownContent content={streamingText} />
                 </div>
               )}
@@ -71,9 +72,9 @@ export default function MessageList({
       {/* Typing indicator */}
       {isLoading && !hasStreamingActivity && (
         <div className="chat-message chat-message-assistant">
-          <div className="flex gap-3 py-4">
-            <div className="w-7 h-7 rounded-lg overflow-hidden flex-shrink-0 mt-0.5 ring-1 ring-border">
-              <AgentAvatar avatar={agent.avatar} emoji={agent.emoji} name={agent.name} color={agent.color} size={28} className="w-full h-full" />
+          <div className="flex gap-3.5 py-5">
+            <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 mt-0.5 ring-1 ring-border">
+              <AgentAvatar avatar={agent.avatar} emoji={agent.emoji} name={agent.name} color={agent.color} size={32} className="w-full h-full" />
             </div>
             <div className="flex items-center gap-1 py-2">
               <span className="typing-dot w-1.5 h-1.5 rounded-full bg-text-muted" />

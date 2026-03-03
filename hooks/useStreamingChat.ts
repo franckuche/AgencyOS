@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { conversationsApi, chatApi } from '@/lib/api';
 import { formatTimestamp } from '@/lib/utils';
 import type { ToolCall, Message, Conversation } from '@/lib/types';
@@ -26,6 +26,15 @@ export function useStreamingChat(opts: UseStreamingChatOpts) {
   const [streamingText, setStreamingText] = useState('');
   const [streamingThinking, setStreamingThinking] = useState('');
   const [streamingTools, setStreamingTools] = useState<ToolCall[]>([]);
+
+  const abortRef = useRef<AbortController | null>(null);
+
+  const stopGeneration = useCallback(() => {
+    if (abortRef.current) {
+      abortRef.current.abort();
+      abortRef.current = null;
+    }
+  }, []);
 
   const sendMessage = useCallback(async (agentId: string, message: string, clientId: string | null) => {
     // Create conversation on-the-fly if none active
@@ -56,6 +65,13 @@ export function useStreamingChat(opts: UseStreamingChatOpts) {
     setStreamingThinking('');
     setStreamingTools([]);
 
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    let thinking = '';
+    let tools: ToolCall[] = [];
+    let responseText = '';
+
     try {
       const recentHistory = withUser.messages.slice(-6);
       let contextMessage = message;
@@ -66,15 +82,12 @@ export function useStreamingChat(opts: UseStreamingChatOpts) {
         contextMessage = `Contexte de la conversation récente:\n${historyText}\n\nNouveau message de l'utilisateur: ${message}`;
       }
 
-      const res = await chatApi.send({ agentId, message: contextMessage, clientId });
+      const res = await chatApi.send({ agentId, message: contextMessage, clientId }, controller.signal);
       if (!res.ok) throw new Error('Chat request failed');
 
       const reader = res.body!.getReader();
       const decoder = new TextDecoder();
       let lineBuffer = '';
-      let thinking = '';
-      let tools: ToolCall[] = [];
-      let responseText = '';
 
       while (true) {
         const { done, value } = await reader.read();
@@ -134,18 +147,43 @@ export function useStreamingChat(opts: UseStreamingChatOpts) {
       saveConversation(withAssistant);
       refreshList();
     } catch (error) {
-      const errorMsg: Message = {
-        role: 'assistant',
-        content: `Erreur de communication avec l'agent. Vérifie que Claude Code est lancé.\n\n\`${error}\``,
-        timestamp: formatTimestamp(),
-      };
-      const withError: Conversation = {
-        ...withUser,
-        messages: [...withUser.messages, errorMsg],
-      };
-      setActiveConversation(withError);
-      saveConversation(withError);
+      // If aborted (user clicked stop), save what we have so far
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        const partialContent = responseText || '(génération interrompue)';
+        const assistantMsg: Message = {
+          role: 'assistant',
+          content: partialContent + '\n\n*— Génération stoppée*',
+          timestamp: formatTimestamp(),
+          thinking: thinking || undefined,
+          toolCalls: tools.length > 0 ? tools : undefined,
+        };
+        const withAssistant: Conversation = {
+          ...withUser,
+          messages: [...withUser.messages, assistantMsg],
+        };
+        setActiveConversation(withAssistant);
+        saveConversation(withAssistant);
+        refreshList();
+      } else {
+        // Save partial response + error context
+        const partialContent = responseText ? responseText + '\n\n---\n\n' : '';
+        const errorDetail = error instanceof Error ? error.message : String(error);
+        const errorMsg: Message = {
+          role: 'assistant',
+          content: `${partialContent}**Erreur de communication avec l'agent.**\n\n\`${errorDetail}\`\n\nCauses possibles :\n- Claude Code n'est pas lancé\n- Le process Claude a planté (relance ta question)\n- Connexion réseau interrompue`,
+          timestamp: formatTimestamp(),
+          thinking: thinking || undefined,
+          toolCalls: tools.length > 0 ? tools : undefined,
+        };
+        const withError: Conversation = {
+          ...withUser,
+          messages: [...withUser.messages, errorMsg],
+        };
+        setActiveConversation(withError);
+        saveConversation(withError);
+      }
     } finally {
+      abortRef.current = null;
       setIsLoading(false);
       setStreamingText('');
       setStreamingThinking('');
@@ -153,5 +191,5 @@ export function useStreamingChat(opts: UseStreamingChatOpts) {
     }
   }, [activeConversation, saveConversation, refreshList, selectedClient, setActiveConversation, setActiveConversationId]);
 
-  return { sendMessage, isLoading, streamingText, streamingThinking, streamingTools };
+  return { sendMessage, isLoading, streamingText, streamingThinking, streamingTools, stopGeneration };
 }

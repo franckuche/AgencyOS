@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'fs';
 import path from 'path';
 import type { Conversation } from '../route';
+import { validateParam } from '@/lib/validation';
 
 const CONV_DIR = path.join(process.cwd(), '.data', 'conversations');
 
@@ -28,6 +29,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const bad = validateParam(id);
+  if (bad) return bad;
   const conv = loadConv(id);
   if (!conv) {
     return Response.json({ error: 'Not found' }, { status: 404 });
@@ -41,6 +44,8 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const bad = validateParam(id);
+  if (bad) return bad;
   const conv = loadConv(id);
   if (!conv) {
     return Response.json({ error: 'Not found' }, { status: 404 });
@@ -74,6 +79,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const bad = validateParam(id);
+  if (bad) return bad;
   const fp = getPath(id);
   if (existsSync(fp)) {
     unlinkSync(fp);

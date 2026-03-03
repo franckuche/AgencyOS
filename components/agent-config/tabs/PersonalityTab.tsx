@@ -58,7 +58,7 @@ export default function PersonalityTab({ agent }: PersonalityTabProps) {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-[#0D1117]">
+    <div className="flex-1 flex flex-col bg-[#F9FAFB]">
       {/* Header compact */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-bg-primary">
         <div className="flex items-center gap-3">

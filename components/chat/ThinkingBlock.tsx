@@ -68,14 +68,17 @@ interface ThinkingBlockProps {
   thinking?: string;
   toolCalls?: ToolCall[];
   defaultOpen?: boolean;
+  isStreaming?: boolean;
 }
 
-export default function ThinkingBlock({ thinking, toolCalls, defaultOpen = false }: ThinkingBlockProps) {
+export default function ThinkingBlock({ thinking, toolCalls, defaultOpen = false, isStreaming = false }: ThinkingBlockProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   if (!thinking && (!toolCalls || toolCalls.length === 0)) return null;
 
   const toolCount = toolCalls?.length || 0;
+  const completedCount = toolCalls?.filter(tc => tc.result !== undefined).length || 0;
+  const hasRunningTool = isStreaming && toolCount > 0 && completedCount < toolCount;
 
   return (
     <div className="mb-2">
@@ -101,8 +104,19 @@ export default function ThinkingBlock({ thinking, toolCalls, defaultOpen = false
           </span>
         )}
         {toolCount > 0 && (
-          <span className="text-[10px] bg-bg-hover px-1.5 py-0.5 rounded text-text-muted">
-            {toolCount} outil{toolCount > 1 ? 's' : ''}
+          <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+            hasRunningTool
+              ? 'bg-amber-500/10 text-amber-400'
+              : 'bg-bg-hover text-text-muted'
+          }`}>
+            {hasRunningTool ? (
+              <span className="flex items-center gap-1">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 animate-[pulse-dot_1.5s_ease-in-out_infinite]" />
+                {completedCount}/{toolCount} outils
+              </span>
+            ) : (
+              <>{toolCount} outil{toolCount > 1 ? 's' : ''}</>
+            )}
           </span>
         )}
       </button>
@@ -115,20 +129,42 @@ export default function ThinkingBlock({ thinking, toolCalls, defaultOpen = false
             </div>
           )}
           {toolCalls &&
-            toolCalls.map((tc, i) => (
-              <div key={i} className="text-[11px]">
-                <div className="flex items-center gap-1.5 text-text-secondary">
-                  <span className="text-text-muted">{getToolIcon(tc.name)}</span>
-                  <span className="font-mono font-medium text-accent-cyan/80">{tc.name}</span>
-                  <span className="text-text-muted truncate max-w-[300px]">{getToolLabel(tc)}</span>
+            toolCalls.map((tc, i) => {
+              const isRunning = isStreaming && !tc.result && i === toolCount - 1;
+              const isDone = tc.result !== undefined;
+
+              return (
+                <div key={i} className="text-[11px]">
+                  <div className="flex items-center gap-1.5 text-text-secondary">
+                    {/* Status indicator */}
+                    {isRunning ? (
+                      <span className="flex-shrink-0 w-3.5 h-3.5 flex items-center justify-center">
+                        <span className="w-2 h-2 rounded-full border-[1.5px] border-amber-400 border-t-transparent animate-spin" />
+                      </span>
+                    ) : isDone ? (
+                      <span className="flex-shrink-0 text-accent-green">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      </span>
+                    ) : (
+                      <span className="flex-shrink-0 text-text-muted">{getToolIcon(tc.name)}</span>
+                    )}
+                    <span className="text-text-muted">{getToolIcon(tc.name)}</span>
+                    <span className={`font-mono font-medium ${isRunning ? 'text-amber-400' : 'text-accent-cyan/80'}`}>{tc.name}</span>
+                    <span className="text-text-muted truncate max-w-[300px]">{getToolLabel(tc)}</span>
+                    {isRunning && (
+                      <span className="text-[10px] text-amber-400/70 ml-auto flex-shrink-0">En cours...</span>
+                    )}
+                  </div>
+                  {tc.result && (
+                    <pre className="mt-1 text-[10px] text-text-muted bg-bg-hover/50 rounded p-1.5 max-h-20 overflow-y-auto whitespace-pre-wrap leading-relaxed">
+                      {tc.result}
+                    </pre>
+                  )}
                 </div>
-                {tc.result && (
-                  <pre className="mt-1 text-[10px] text-text-muted bg-bg-hover/50 rounded p-1.5 max-h-20 overflow-y-auto whitespace-pre-wrap leading-relaxed">
-                    {tc.result}
-                  </pre>
-                )}
-              </div>
-            ))}
+              );
+            })}
         </div>
       )}
     </div>

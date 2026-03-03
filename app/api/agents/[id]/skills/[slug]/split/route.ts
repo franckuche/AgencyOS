@@ -1,6 +1,7 @@
 import { writeFileSync, existsSync, mkdirSync } from 'fs';
 import path from 'path';
 import { getAgent } from '@/lib/agents';
+import { validateParam } from '@/lib/validation';
 
 interface SplitSection {
   heading: string;
@@ -13,6 +14,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string; slug: string }> }
 ) {
   const { id, slug } = await params;
+  const bad = validateParam(id) || validateParam(slug, 'slug');
+  if (bad) return bad;
   const agent = getAgent(id);
   if (!agent) return Response.json({ error: 'Agent not found' }, { status: 404 });
 

@@ -39,6 +39,14 @@ function put(url: string, body: unknown) {
   });
 }
 
+function patch(url: string, body: unknown) {
+  return fetch(url, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
 function del(url: string) {
   return fetch(url, { method: 'DELETE' });
 }
@@ -85,8 +93,13 @@ export const conversationsApi = {
 
 export const chatApi = {
   /** Returns raw Response for streaming */
-  send: (data: { agentId: string; message: string; clientId: string | null }) =>
-    post('/api/chat', data),
+  send: (data: { agentId: string; message: string; clientId: string | null }, signal?: AbortSignal) =>
+    fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      signal,
+    }),
 };
 
 // ── Clients ──────────────────────────────────────────────────────────────────
@@ -119,8 +132,11 @@ export const skillsApi = {
   update: (agentId: string, slug: string, content: string) =>
     put(`/api/agents/${agentId}/skills/${slug}`, { content }),
 
-  create: (agentId: string, name: string) =>
-    post(`/api/agents/${agentId}/skills`, { name }).then((r) => json<{ slug: string }>(r)),
+  create: (agentId: string, name: string, content?: string) =>
+    post(`/api/agents/${agentId}/skills`, { name, content }).then((r) => json<{ slug: string }>(r)),
+
+  append: (agentId: string, slug: string, title: string, content: string) =>
+    patch(`/api/agents/${agentId}/skills/${slug}`, { title, content }).then((r) => json<{ ok: boolean }>(r)),
 
   delete: (agentId: string, slug: string) =>
     del(`/api/agents/${agentId}/skills/${slug}`),

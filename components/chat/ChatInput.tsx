@@ -10,6 +10,7 @@ interface ChatInputProps {
   agents: AgentConfig[];
   onChangeAgent: (agentId: string) => void;
   onSendMessage: (agentId: string, message: string, clientId: string | null) => void;
+  onStop: () => void;
   isLoading: boolean;
   selectedClient: string | null;
   clients: ClientSummary[];
@@ -20,6 +21,7 @@ export default function ChatInput({
   agents,
   onChangeAgent,
   onSendMessage,
+  onStop,
   isLoading,
   selectedClient,
   clients,
@@ -70,7 +72,8 @@ export default function ChatInput({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if ((!input.trim() && attachedFiles.length === 0) || isLoading) return;
+    if (isLoading) return;
+    if (!input.trim() && attachedFiles.length === 0) return;
 
     let message = input.trim();
     if (attachedFiles.length > 0) {
@@ -92,6 +95,11 @@ export default function ChatInput({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape' && isLoading) {
+      e.preventDefault();
+      onStop();
+      return;
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
@@ -110,7 +118,7 @@ export default function ChatInput({
         </div>
       )}
 
-      <div className="max-w-3xl mx-auto px-4 py-3">
+      <div className="max-w-4xl mx-auto px-4 py-3">
         <form onSubmit={handleSubmit} className="relative">
           {/* Attached files */}
           {attachedFiles.length > 0 && (
@@ -147,10 +155,10 @@ export default function ChatInput({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="p-3 text-text-muted hover:text-text-secondary transition-colors flex-shrink-0"
+              className="p-3.5 text-text-muted hover:text-text-secondary transition-colors flex-shrink-0"
               title="Joindre un fichier"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
               </svg>
             </button>
@@ -180,31 +188,43 @@ export default function ChatInput({
                   : `Message ${agent.name}...`
               }
               rows={1}
-              disabled={isLoading}
-              className="flex-1 bg-transparent py-3.5 text-sm text-text-primary placeholder-text-muted resize-none focus:outline-none disabled:opacity-50"
-              style={{ minHeight: '52px', maxHeight: '160px' }}
+              className="flex-1 bg-transparent py-4 text-[15px] text-text-primary placeholder-text-muted resize-none focus:outline-none"
+              style={{ minHeight: '56px', maxHeight: '180px' }}
               onInput={(e) => {
                 const target = e.target as HTMLTextAreaElement;
-                target.style.height = '52px';
-                target.style.height = `${Math.min(target.scrollHeight, 160)}px`;
+                target.style.height = '56px';
+                target.style.height = `${Math.min(target.scrollHeight, 180)}px`;
               }}
             />
 
-            {/* Send button */}
-            <button
-              type="submit"
-              disabled={(!input.trim() && attachedFiles.length === 0) || isLoading}
-              className="p-3 flex-shrink-0 transition-all disabled:opacity-20"
-              style={{ color: (input.trim() || attachedFiles.length > 0) && !isLoading ? agent.color : '#3D4A5C' }}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-              </svg>
-            </button>
+            {/* Send / Stop button */}
+            {isLoading ? (
+              <button
+                type="button"
+                onClick={onStop}
+                className="p-3.5 flex-shrink-0 transition-all group"
+                title="Stopper la génération"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-red-400 group-hover:text-red-300 transition-colors">
+                  <rect x="4" y="4" width="16" height="16" rx="2" fill="currentColor" />
+                </svg>
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={!input.trim() && attachedFiles.length === 0}
+                className="p-3.5 flex-shrink-0 transition-all disabled:opacity-20"
+                style={{ color: (input.trim() || attachedFiles.length > 0) ? agent.color : '#D1D5DB' }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                </svg>
+              </button>
+            )}
           </div>
         </form>
         <p className="text-[10px] text-text-muted text-center mt-2">
-          Enter pour envoyer, Shift+Enter pour sauter une ligne
+          Enter pour envoyer, Shift+Enter pour sauter une ligne{isLoading ? ', Echap pour stopper' : ''}
         </p>
       </div>
     </div>

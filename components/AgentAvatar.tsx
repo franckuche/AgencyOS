@@ -30,7 +30,7 @@ export default function AgentAvatar({ avatar, emoji, name, color, size, classNam
       style={{
         width: size,
         height: size,
-        backgroundColor: color ? `${color}20` : '#ffffff10',
+        backgroundColor: color ? `${color}20` : '#00000008',
         borderRadius: 'inherit',
       }}
     >

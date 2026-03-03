@@ -182,7 +182,7 @@ export default function AgentConfigPage({ agents, onAgentsChanged, onOpenSidebar
         </aside>
 
         {/* Tab content — tabs now occupy full main area */}
-        <main className="flex-1 flex overflow-hidden bg-[#0D1117]">
+        <main className="flex-1 flex overflow-hidden bg-[#F9FAFB]">
           {activeTab === 'skills' && <SkillsTab agent={agent} />}
           {activeTab === 'personality' && <PersonalityTab agent={agent} />}
           {activeTab === 'services' && <McpServicesTab agent={agent} />}

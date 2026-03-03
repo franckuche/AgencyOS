@@ -240,8 +240,8 @@ export default function SkillsTab({ agent }: SkillsTabProps) {
             <div className="px-3 space-y-2">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="rounded-lg p-3 bg-bg-hover/30 animate-pulse">
-                  <div className="h-3.5 w-2/3 rounded bg-bg-hover mb-2" style={{ backgroundImage: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
-                  <div className="h-2.5 w-full rounded bg-bg-hover/60" style={{ backgroundImage: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite', animationDelay: `${i * 0.2}s` }} />
+                  <div className="h-3.5 w-2/3 rounded bg-bg-hover mb-2" style={{ backgroundImage: 'linear-gradient(90deg, transparent, rgba(0,0,0,0.04), transparent)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
+                  <div className="h-2.5 w-full rounded bg-bg-hover/60" style={{ backgroundImage: 'linear-gradient(90deg, transparent, rgba(0,0,0,0.04), transparent)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite', animationDelay: `${i * 0.2}s` }} />
                 </div>
               ))}
             </div>
@@ -278,7 +278,7 @@ export default function SkillsTab({ agent }: SkillsTabProps) {
       </div>
 
       {/* Right panel: editor */}
-      <div className="flex-1 flex flex-col bg-[#0D1117] animate-slide-in-right">
+      <div className="flex-1 flex flex-col bg-[#F9FAFB] animate-slide-in-right">
         {selectedSkill && skillDetail ? (
           showSplit && splitSections.length > 0 ? (
             <SkillSplitOverlay
